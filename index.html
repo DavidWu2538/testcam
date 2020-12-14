@@ -1,124 +1,14 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <title>录制视频音频</title>
+<meta charset="utf-8">
+<title>文档标题</title>
 </head>
+ 
 <body>
-  <video id="audio" width="400" height="600" autoplay controls></video>
-  <input onclick="start()" type="button" value="开始" />
-  <input onclick="stop()" type="button" value="结束" />
-  <a id='downloadLink'></a>
-  <script>
-    var mediaRecorder,  //video获取视频音频
-        recordedBlobs=[];  //视频音频Blob
-    var videoTarget = document.getElementById('audio'); //video 绑定
-    var constraints = {audio: true, video: {width: 400, height: 600,facingMode: "user"}}; //初始化video配置
-    // facingMode:'user'  开启前置摄像头 
-    // facingMode: { exact: "environment" } 开启后置摄像头
-    var downloadLink = document.getElementById('downloadLink');  //下载已录视频
-   
-    //开始录制
-    function startRecording(stream) {
-      if (typeof MediaRecorder.isTypeSupported == 'function'){
-      //根据浏览器来设置编解码参数， 不过h264好像大部分浏览器都是可以用的
-        if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
-          var options = {mimeType: 'video/webm;codecs=h264'};
-        } else if (MediaRecorder.isTypeSupported('video/webm;codecs=h264')) {
-          var options = {mimeType: 'video/webm;codecs=h264'};
-        } else  if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
-          var options = {mimeType: 'video/webm;codecs=vp8'};
-        }
-        mediaRecorder = new MediaRecorder(stream, options);
-      }else{
-        log('isTypeSupported is not supported, using default codecs for browser');
-        mediaRecorder = new MediaRecorder(stream);
-      }
-      mediaRecorder.start(10);
-      videoTarget.srcObject = stream;
-      videoTarget.play();
-      
-      mediaRecorder.ondataavailable = function(e) {
-        if (e.data && e.data.size > 0) {
-          recordedBlobs.push(e.data);
-        }
-      };
-      //停止录像后增加下载视频按钮，将视频流转为mp4格式，并在页面增加视频回放窗口
-      mediaRecorder.onstop = function (){
-        let blob = new Blob(recordedBlobs);
-        recordedBlobs = [];
-        let videoURL = window.URL.createObjectURL(blob);
-        //下载链接
-        downloadLink.href = videoURL;
-        //视频回放
-        videoTarget.src = videoURL;
-        //下载mp4格式视频
-        downloadLink.download = 'media.mp4';
-        downloadLink.innerHTML = 'Download video file';
-        //随机生成数字
-        let rand = Math.floor((Math.random() * 10000000));
-        let name = 'video' + rand + '.mp4';
-        downloadLink.setAttribute('download', name);
-        downloadLink.setAttribute('name', name);
-      }
-    }
-
-    // 点击开始按钮，获取随机数并触发前置摄像头开启
-    function start() {
-      if (typeof MediaRecorder === 'undefined' || !navigator.getUserMedia) {
-        alert('MediaRecorder not supported on your browser, use Firefox 30 or Chrome 49 instead.');
-      }else {
-        navigator.mediaDevices.getUserMedia(constraints)
-        .then((stream) => {
-          startRecording(stream);
-        });
-      }
-    }
-
-    //停止录制
-    function stop() {
-      // mediaRecorder.stop();
-      //官方给的是mediaRecorder.stop()停止录制，但是发现虽然视频流没有再继续录制了，摄像头却无法关闭，video的录制时间        记录也还在继续
-        if (!videoTarget.srcObject) return
-        let stream = videoTarget.srcObject;
-        let tracks = stream.getTracks();
-        //关闭摄像头和音频
-        tracks.forEach(track => {
-          track.stop()
-        })
-        //让video标签不再显示摄像内容
-        videoTarget.srcObject = null
-
-        //向后端发生视频文件
-        //原生构造ajax请求
-        //创建异步对象
-        let blob = new Blob(recordedBlobs,{type: 'video/mp4'});
-        let data = new FormData();
-        data.append('file', blob); //参数名根据后端接收什么字段
-        //构造ajax请求
-        let xhr = new XMLHttpRequest();
-        //请求响应
-        xhr.onreadystatechange = function(){
-          if(this.readyState == 4  ){
-            if(this.status == 200){
-              let res = this.response;
-              if(res.state == 'success'){
-                alert('成功')
-              }else{
-                alert('失败')
-              }
-            }
-          }
-        }
-        xhr.responseType = 'json';
-        //xhr.open('post',url,true),true为异步，但是原生好像只能是true，反正我写false是一直报错的
-        xhr.open('post','/fa',true);
-        //发送请求
-        xhr.send(data);
-      }
-  </script>
+    <div class="video_btn">
+        <input id='video' type="file" accept="video/*" capture="camcorder"/>
+   </div>
 </body>
-
+ 
 </html>
